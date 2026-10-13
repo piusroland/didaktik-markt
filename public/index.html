@@ -39,19 +39,12 @@
 </head>
 <body>
 
-    <nav>
-        <button onclick="switchTab('u1', this)" class="active-btn">1. Wimmelbild</button>
-        <button onclick="switchTab('u2', this)">2. Rallye</button>
-        <button onclick="switchTab('u3', this)">3. Marktschreier</button>
-    </nav>
-
     <!-- Übung 1: Wimmelbild -->
     <div id="u1" class="tab-content active">
         <h2>Das Markt-Wimmelbild</h2>
         
-        <div class="mode-switch">
-            <label><input type="radio" name="case-toggle" value="nom" checked onchange="updateMode()"> 1. Erkunden (Nominativ)</label>
-            <label style="margin-left: 20px;"><input type="radio" name="case-toggle" value="acc" onchange="updateMode()"> 2. Einkaufen (Akkusativ)</label>
+        <div id="wimmelbild-status" style="text-align: center; margin-bottom: 20px; font-size: 22px; font-weight: bold; color: #007bff; background: #e9ecef; padding: 10px; border-radius: 8px;">
+            Phase 1: Erkunden (Nominativ)
         </div>
 
         <div class="market-grid">
@@ -162,12 +155,15 @@
     </div>
 
     <script>
-        function switchTab(id, btn) {
+        // Globale Navigation durch den Lehrer
+        function setExercise(id) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-btn'));
             document.getElementById(id).classList.add('active');
-            btn.classList.add('active-btn');
         }
+
+        socket.on('exercise_update', (exerciseId) => {
+            setExercise(exerciseId);
+        });
 
         const socket = io();
         socket.on('connect', () => {
@@ -233,15 +229,24 @@
             }
         };
 
-        function updateMode() {
-            // Get the currently selected radio button (nom or acc)
-            currentCase = document.querySelector('input[name="case-toggle"]:checked').value;
+        // Listener for live updates from the teacher
+        socket.on('wimmelbild_update', (mode) => {
+            currentCase = mode;
+            const statusDiv = document.getElementById('wimmelbild-status');
             
-            // If an item was already tapped, update the text immediately to the new case
+            if (mode === 'nom') {
+                statusDiv.innerText = "Phase 1: Erkunden (Nominativ)";
+                statusDiv.style.color = "#007bff";
+            } else {
+                statusDiv.innerText = "Phase 2: Einkaufen (Akkusativ)";
+                statusDiv.style.color = "#28a745";
+            }
+            
+            // If the student currently has an item open, refresh its grammar immediately
             if (currentItem) {
                 showGrammar(currentItem);
             }
-        }
+        });
 
         function showGrammar(itemKey) {
             currentItem = itemKey;
@@ -273,6 +278,15 @@
 
         // --- Server Event Listeners (Teacher Overrides) ---
         socket.on('state_update', (data) => {
+            // Apply the active exercise mandated by the server
+            if (data.activeExercise) {
+                setExercise(data.activeExercise);
+            }
+            if (data.wimmelbildMode) {
+                // Manually trigger the UI update function above
+                const dummyEvent = new CustomEvent('update_wimmelbild');
+                socket._callbacks['$wimmelbild_update'][0](data.wimmelbildMode);
+            }
             if (data.state === 'lobby') {
                 clearInterval(localInterval);
                 switchView('view-lobby');

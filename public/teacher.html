@@ -16,6 +16,21 @@
 </head>
 <body>
     <h1>Lehrer Dashboard</h1>
+
+    <div class="panel" style="background: #222; border: 2px solid #007bff;">
+        <h2>🌐 Globale Navigation (Tablets umschalten)</h2>
+        <p>Bestimme, welche Übung die Schüler auf ihren Tablets sehen:</p>
+        <button onclick="socket.emit('set_active_exercise', 'u1')" style="background: #6c757d;">1. Wimmelbild anzeigen</button>
+        <button onclick="socket.emit('set_active_exercise', 'u2')" style="background: #6c757d;">2. Rallye anzeigen</button>
+        <button onclick="socket.emit('set_active_exercise', 'u3')" style="background: #6c757d;">3. Marktschreier anzeigen</button>
+    </div>
+
+    <div class="panel">
+        <h2>Übung 1: Wimmelbild Steuerung</h2>
+        <p>Schalte die Tablets der Schüler live um:</p>
+        <button onclick="socket.emit('set_wimmelbild_mode', 'nom')" style="background: #007bff;">Phase 1: Nominativ (Erkunden)</button>
+        <button onclick="socket.emit('set_wimmelbild_mode', 'acc')" style="background: #28a745;">Phase 2: Akkusativ (Einkaufen)</button>
+    </div>
     
     <div class="panel">
         <h2>Kontrollzentrum</h2>

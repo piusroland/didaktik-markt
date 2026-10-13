@@ -63,17 +63,37 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// --- ÜBUNG 2: Dual-Mode Logic ---
-let classroomState = 'practice'; // 'practice', 'lobby', 'multiplayer', 'scoreboard'
+// --- ÜBUNG 1, 2 & 3: Global State ---
+let activeExercise = 'u1';       // NEU: Steuert, welcher Tab aktiv ist ('u1', 'u2', 'u3')
+let wimmelbildMode = 'nom';      
+let classroomState = 'practice'; 
 let players = {};
 let teams = {};
-let teamSizes = {}; // NEU: Speichert die Anzahl der Spieler pro Team
+let teamSizes = {};
 let globalTimer = 60;
 let timerInterval = null;
 
 io.on('connection', (socket) => {
-    socket.emit('state_update', { state: classroomState, timer: globalTimer, teams });
+    // Send initial state to tablets connecting late
+    socket.emit('state_update', { 
+        state: classroomState, 
+        timer: globalTimer, 
+        teams, 
+        wimmelbildMode,
+        activeExercise: activeExercise 
+    });
     socket.emit('teacher_update', { players, teams, state: classroomState });
+
+    // --- NEU: Teacher Action für Übung 1 ---
+    socket.on('set_wimmelbild_mode', (mode) => {
+        wimmelbildMode = mode;
+        io.emit('wimmelbild_update', wimmelbildMode); // Send to all tablets
+    });
+
+    socket.on('set_active_exercise', (exerciseId) => {
+        activeExercise = exerciseId;
+        io.emit('exercise_update', activeExercise);
+    });
 
     // --- Student Actions ---
     socket.on('student_join', (name) => {
