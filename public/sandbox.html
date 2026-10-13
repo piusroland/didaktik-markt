@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Didaktik-Markt: Sandbox Modus</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; max-width: 900px; margin: 0 auto; }
+        
+        /* Navigation */
+        nav { margin-bottom: 20px; display: flex; gap: 10px; }
+        nav button { flex: 1; padding: 15px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 5px; }
+        nav button.active-btn { background: #007bff; color: white; border-color: #007bff; font-weight: bold; }
+        
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+
+        /* Übung 1: Wimmelbild */
+        .market-grid { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .market-item { font-size: 60px; cursor: pointer; padding: 20px; background: #fff; border: 3px solid #ddd; border-radius: 15px; transition: transform 0.1s; user-select: none; }
+        .market-item:active { transform: scale(0.95); border-color: #007bff; }
+        .grammar-box { margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px; font-size: 24px; text-align: center; min-height: 90px; line-height: 1.5; }
+        .signal { color: #d9534f; font-weight: bold; text-decoration: underline; }
+        .mode-switch { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: #e9ecef; padding: 15px; border-radius: 8px; }
+        .mode-switch label { cursor: pointer; padding: 10px; }
+
+        /* Übung 2: Rallye */
+        .question-box { font-size: 28px; padding: 20px; background: #fff; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .blank { display: inline-block; width: 60px; border-bottom: 3px solid #000; text-align: center; color: #007bff; font-weight: bold; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 400px; margin: 0 auto; }
+        .suffix-btn { font-size: 24px; padding: 15px; border: none; border-radius: 8px; background: #e9ecef; cursor: pointer; transition: 0.2s; }
+        .suffix-btn:active { transform: scale(0.95); }
+        .correct { background: #28a745 !important; color: white; }
+        .wrong { background: #dc3545 !important; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center; color: #333;">Markt-Simulation (Sandbox Modus)</h1>
+    
+    <nav>
+        <button onclick="switchTab('u1', this)" class="active-btn">1. Wimmelbild</button>
+        <button onclick="switchTab('u2', this)">2. Rallye (Solo)</button>
+        <button onclick="switchTab('u3', this)">3. Marktschreier</button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- ÜBUNG 1: WIMMELBILD                        -->
+    <!-- ========================================== -->
+    <div id="u1" class="tab-content active">
+        <h2>Das Markt-Wimmelbild</h2>
+        
+        <div class="mode-switch">
+            <label><input type="radio" name="case-toggle" value="nom" checked onchange="updateMode()"> Phase 1: Erkunden (Nominativ)</label>
+            <label style="margin-left: 20px;"><input type="radio" name="case-toggle" value="acc" onchange="updateMode()"> Phase 2: Einkaufen (Akkusativ)</label>
+        </div>
+
+        <div class="market-grid">
+            <div class="market-item" onclick="showGrammar('apfel')">🍎</div>
+            <div class="market-item" onclick="showGrammar('gurke')">🥒</div>
+            <div class="market-item" onclick="showGrammar('brot')">🍞</div>
+            <div class="market-item" onclick="showGrammar('kaese')">🧀</div>
+        </div>
+
+        <div id="grammar-display" class="grammar-box">
+            Tippe auf ein Lebensmittel!
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ÜBUNG 2: RALLYE (SOLO)                     -->
+    <!-- ========================================== -->
+    <div id="u2" class="tab-content">
+        <h2>Die Markt-Rallye</h2>
+        
+        <div id="view-practice-start" style="text-align: center; margin: 30px 0;">
+            <h3>Freies Üben</h3>
+            <p>Trainiere so oft du willst. Du hast 60 Sekunden!</p>
+            <button onclick="startPractice()" style="padding: 10px 20px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Übung Starten</button>
+        </div>
+
+        <div id="view-game" style="display: none;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-bottom: 15px;">
+                <span id="score-display">Punkte: 0</span>
+                <span style="color: red;">⏱ <span id="timer-display">60</span>s</span>
+                <span>🔥 Streak: <span id="streak-counter">0</span></span>
+            </div>
+
+            <div class="question-box" id="question-text">Lade Frage...</div>
+            
+            <div class="btn-grid">
+                <button class="suffix-btn" onclick="checkAnswer('-e', this)">-e</button>
+                <button class="suffix-btn" onclick="checkAnswer('-en', this)">-en</button>
+                <button class="suffix-btn" onclick="checkAnswer('-er', this)">-er</button>
+                <button class="suffix-btn" onclick="checkAnswer('-es', this)">-es</button>
+            </div>
+            
+            <p id="game-feedback" style="height: 20px; margin-top: 15px; font-weight: bold; text-align: center;"></p>
+        </div>
+
+        <div id="view-end" style="display: none; text-align: center; margin-top: 20px;">
+            <h2>Zeit abgelaufen!</h2>
+            <p style="font-size: 24px;">Deine Punkte: <strong id="final-practice-score">0</strong></p>
+            <button onclick="resetPractice()" style="padding: 10px 20px; background: #28a745; color: white; border:none; border-radius: 5px; cursor: pointer;">Nochmal Spielen</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ÜBUNG 3: MARKTSCHREIER                     -->
+    <!-- ========================================== -->
+    <div id="u3" class="tab-content">
+        <h2>Der gesprächige Marktschreier</h2>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ccc;">
+                <h3 style="margin-top: 0;">Marktstand</h3>
+                <div id="market-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 18px;">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+
+            <div style="flex: 1; background: #e2e3e5; padding: 15px; border-radius: 8px; min-width: 150px;">
+                <h3 style="margin-top: 0;">🛒 Dein Korb</h3>
+                <div id="basket-items" style="font-size: 18px; line-height: 1.8;"></div>
+                <p id="basket-count" style="font-weight: bold; margin-top: 15px;">0 / 3 gekauft</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div id="chat" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-size: 18px;">
+                <p><strong>Verkäufer:</strong> Hallo! Willkommen an meinem Stand. Was darf es heute sein?</p>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="msg" placeholder="Ich hätte gerne..." style="flex: 1; padding: 12px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc;">
+                <button id="send-btn" onclick="sendChat()" style="padding: 12px 25px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Sagen</button>
+            </div>
+            
+            <p id="feedback" style="color: #dc3545; font-weight: bold; height: 20px; margin-top: 10px;"></p>
+            
+            <button id="restart-btn" onclick="restartMarket()" style="display: none; width: 100%; padding: 15px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;">Neue Runde starten</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // LOKALE NAVIGATION
+        // ==========================================
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+        }
+
+        // ==========================================
+        // ÜBUNG 1: WIMMELBILD
+        // ==========================================
+        let currentCase = 'nom';
+        let currentItem = null;
+
+        const grammarData = {
+            apfel: { nom: "d<span class='signal'>er</span> rot<span class='signal'>e</span> Apfel <br> ein rot<span class='signal'>er</span> Apfel", acc: "Ich sehe d<span class='signal'>en</span> rot<span class='signal'>en</span> Apfel <br> Ich sehe ein<span class='signal'>en</span> rot<span class='signal'>en</span> Apfel" },
+            gurke: { nom: "di<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke <br> ein<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke", acc: "Ich kaufe di<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke <br> Ich kaufe ein<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke" },
+            brot: { nom: "da<span class='signal'>s</span> frisch<span class='signal'>e</span> Brot <br> ein frisch<span class='signal'>es</span> Brot", acc: "Ich nehme da<span class='signal'>s</span> frisch<span class='signal'>e</span> Brot <br> Ich nehme ein frisch<span class='signal'>es</span> Brot" },
+            kaese: { nom: "d<span class='signal'>er</span> alt<span class='signal'>e</span> Käse <br> ein alt<span class='signal'>er</span> Käse", acc: "Ich probiere d<span class='signal'>en</span> alt<span class='signal'>en</span> Käse <br> Ich probiere ein<span class='signal'>en</span> alt<span class='signal'>en</span> Käse" }
+        };
+
+        function updateMode() {
+            currentCase = document.querySelector('input[name="case-toggle"]:checked').value;
+            if (currentItem) showGrammar(currentItem);
+        }
+
+        function showGrammar(itemKey) {
+            currentItem = itemKey;
+            document.getElementById('grammar-display').innerHTML = grammarData[itemKey][currentCase];
+        }
+
+        // ==========================================
+        // ÜBUNG 2: RALLYE (SOLO)
+        // ==========================================
+        let localScore = 0;
+        let streak = 0;
+        let localTimer = 60;
+        let localInterval = null;
+        let currentQuestion = {};
+
+        const questions = [
+            { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin = -en" },
+            { text: "Das ist ein alt<span class='blank'>___</span> Käse.", answer: "-er", rule: "Nominativ + Maskulin (ein) = -er" },
+            { text: "Ich nehme die grün<span class='blank'>___</span> Gurke.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
+            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" }
+        ];
+
+        function startPractice() {
+            localScore = 0;
+            streak = 0;
+            localTimer = 60;
+            
+            document.getElementById('view-practice-start').style.display = 'none';
+            document.getElementById('view-game').style.display = 'block';
+            document.getElementById('score-display').innerText = `Punkte: 0`;
+            
+            nextQuestion();
+            
+            clearInterval(localInterval);
+            localInterval = setInterval(() => {
+                localTimer--;
+                document.getElementById('timer-display').innerText = localTimer;
+                if (localTimer <= 0) {
+                    clearInterval(localInterval);
+                    document.getElementById('view-game').style.display = 'none';
+                    document.getElementById('view-end').style.display = 'block';
+                    document.getElementById('final-practice-score').innerText = localScore;
+                }
+            }, 1000);
+        }
+
+        function resetPractice() {
+            document.getElementById('view-end').style.display = 'none';
+            document.getElementById('view-practice-start').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            document.querySelectorAll('.suffix-btn').forEach(btn => {
+                btn.classList.remove('correct', 'wrong');
+                btn.disabled = false;
+            });
+            document.getElementById('game-feedback').innerText = "";
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('question-text').innerHTML = currentQuestion.text;
+        }
+
+        function checkAnswer(selectedSuffix, btnElement) {
+            document.querySelectorAll('.suffix-btn').forEach(b => b.disabled = true);
+            
+            if (selectedSuffix === currentQuestion.answer) {
+                btnElement.classList.add('correct');
+                streak++;
+                
+                let earnedPoints = 10;
+                if (streak >= 3) earnedPoints += 5;
+                if (streak >= 6) earnedPoints += 10;
+                
+                localScore += earnedPoints;
+                document.getElementById('streak-counter').innerText = streak;
+                document.getElementById('score-display').innerText = `Punkte: ${localScore}`;
+                
+                setTimeout(nextQuestion, 800);
+            } else {
+                btnElement.classList.add('wrong');
+                streak = 0;
+                document.getElementById('streak-counter').innerText = streak;
+                document.getElementById('game-feedback').style.color = "red";
+                document.getElementById('game-feedback').innerText = `Falsch! ${currentQuestion.rule}`;
+                
+                setTimeout(nextQuestion, 2500);
+            }
+        }
+
+        // ==========================================
+        // ÜBUNG 3: MARKTSCHREIER
+        // ==========================================
+        let chatHistory = [];
+        let basketItems = [];
+        let currentInventory = [];
+
+        const masterInventory = [
+            "🍎 Roter Apfel", "🍏 Grüner Apfel", 
+            "🍞 Frisches Brot", "🥖 Altes Brot", 
+            "🥒 Grüne Gurke", "🥒 Gelbe Gurke",
+            "🍅 Rote Tomate", "🍅 Grüne Tomate",
+            "🧀 Alter Käse", "🧀 Milder Käse",
+            "🥚 Weißes Ei", "🥚 Braunes Ei",
+            "🧅 Rote Zwiebel", "🧅 Weiße Zwiebel"
+        ];
+
+        function generateInventory() {
+            let shuffled = [...masterInventory].sort(() => 0.5 - Math.random());
+            currentInventory = shuffled.slice(0, 6);
+            
+            const grid = document.getElementById('market-grid-container');
+            grid.innerHTML = "";
+            currentInventory.forEach(item => {
+                grid.innerHTML += `<div style="padding: 10px; background: #f8f9fa; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${item}</div>`;
+            });
+        }
+        generateInventory();
+
+        async function sendChat() {
+            const inputField = document.getElementById('msg');
+            const input = inputField.value.trim();
+            if (!input) return;
+            
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            inputField.disabled = true;
+            
+            let cooldown = 3;
+            btn.innerText = `Warte (${cooldown}s)...`;
+            
+            const timer = setInterval(() => {
+                cooldown--;
+                if (cooldown > 0) {
+                    btn.innerText = `Warte (${cooldown}s)...`;
+                } else {
+                    clearInterval(timer);
+                    btn.innerText = "Sagen";
+                    btn.disabled = false;
+                    inputField.disabled = false;
+                    inputField.focus();
+                }
+            }, 1000);
+
+            const chatBox = document.getElementById('chat');
+            chatBox.innerHTML += `<p><strong>Du:</strong> ${input}</p>`;
+            chatHistory.push({ role: 'user', content: input });
+            inputField.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Uses the same API endpoint from server.js
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        history: chatHistory, 
+                        basket: basketItems,
+                        inventory: currentInventory
+                    })
+                });
+                
+                if (!res.ok) throw new Error("Rate limit");
+                
+                const data = await res.json();
+                
+                chatHistory.push({ role: 'assistant', content: data.vendor_reply });
+                chatBox.innerHTML += `<p><strong>Verkäufer:</strong> ${data.vendor_reply}</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                
+                document.getElementById('feedback').innerText = data.grammar_correct ? "" : data.didactic_feedback;
+
+                if (data.item_bought) {
+                    basketItems.push(data.item_bought);
+                    document.getElementById('basket-items').innerHTML += `<div>✔️ ${data.item_bought}</div>`;
+                    document.getElementById('basket-count').innerText = `${basketItems.length} / 3 gekauft`;
+                    document.getElementById('feedback').style.color = "#28a745";
+                    document.getElementById('feedback').innerText = "Erfolgreich in den Korb gelegt!";
+                    setTimeout(() => document.getElementById('feedback').innerText = "", 2500);
+                }
+
+                if (data.checkout_complete || basketItems.length >= 3) {
+                    clearInterval(timer);
+                    btn.style.display = 'none';
+                    inputField.style.display = 'none';
+                    document.getElementById('restart-btn').style.display = 'block';
+                }
+
+            } catch (e) {
+                document.getElementById('feedback').style.color = "#dc3545";
+                document.getElementById('feedback').innerText = "Der Server ist gerade ausgelastet. Bitte gleich nochmal probieren.";
+                chatHistory.pop();
+            }
+        }
+
+        function restartMarket() {
+            chatHistory = [];
+            basketItems = [];
+            document.getElementById('basket-items').innerHTML = "";
+            document.getElementById('basket-count').innerText = "0 / 3 gekauft";
+            document.getElementById('chat').innerHTML = `<p><strong>Verkäufer:</strong> Hallo! Willkommen an meinem Stand. Was darf es heute sein?</p>`;
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('send-btn').style.display = 'block';
+            document.getElementById('msg').style.display = 'block';
+            document.getElementById('restart-btn').style.display = 'none';
+            document.getElementById('msg').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            generateInventory();
+        }
+    </script>
+</body>
+</html>
