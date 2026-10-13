@@ -46,54 +46,80 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// --- ÜBUNG 2: Lobby & Teacher Pairing Logic ---
-const players = {}; // socket.id -> { name, team }
-const teams = {};   // teamName -> score
+// --- ÜBUNG 2: Dual-Mode Logic ---
+let classroomState = 'practice'; // 'practice', 'lobby', 'multiplayer', 'scoreboard'
+let players = {};
+let teams = {};
+let globalTimer = 60;
+let timerInterval = null;
 
 io.on('connection', (socket) => {
-    console.log('Verbunden:', socket.id);
-    
-    // Send current state to teacher dashboard
-    socket.emit('teacher_update', { players, teams });
-    socket.emit('leaderboard_update', teams);
+    // Send current state immediately upon connection
+    socket.emit('state_update', { state: classroomState, timer: globalTimer, teams });
+    socket.emit('teacher_update', { players, teams, state: classroomState });
 
-    // 1. Student enters their name
+    // --- Student Actions ---
     socket.on('student_join', (name) => {
         players[socket.id] = { name: name, team: null };
-        io.emit('teacher_update', { players, teams }); // Update teacher screen
+        io.emit('teacher_update', { players, teams, state: classroomState });
     });
 
-    // 2. Teacher pairs students into a team
-    socket.on('assign_team', (data) => {
-        const { teamName, studentIds } = data;
+    socket.on('add_point', (data) => {
+        // Only count server points if multiplayer is active
+        if (classroomState === 'multiplayer' && teams[data.team] !== undefined) {
+            teams[data.team] += data.points;
+            io.emit('teacher_update', { players, teams, state: classroomState });
+        }
+    });
+
+    // --- Teacher Actions ---
+    socket.on('open_lobby', () => {
+        classroomState = 'lobby';
+        players = {}; // Reset for new session
+        teams = {};
+        io.emit('state_update', { state: classroomState, timer: 60, teams });
+        io.emit('teacher_update', { players, teams, state: classroomState });
+    });
+
+    socket.on('assign_team', (studentIds) => {
+        // Auto-generate name: "Name 1 & Name 2"
+        const studentNames = studentIds.map(id => players[id].name);
+        const teamName = studentNames.join(' & ');
         
-        if (!teams[teamName]) teams[teamName] = 0; // Initialize score
+        teams[teamName] = 0;
         
         studentIds.forEach(id => {
             if (players[id]) {
                 players[id].team = teamName;
-                io.to(id).emit('team_assigned', teamName); // Wake up the student's tablet
+                io.to(id).emit('team_assigned', teamName);
             }
         });
-        
-        io.emit('teacher_update', { players, teams });
-        io.emit('leaderboard_update', teams);
+        io.emit('teacher_update', { players, teams, state: classroomState });
     });
 
-    // 3. Gameplay scoring
-    socket.on('add_point', (teamName) => {
-        if (teams[teamName] !== undefined) {
-            teams[teamName] += 10;
-            io.emit('leaderboard_update', teams); 
-        }
+    socket.on('start_multiplayer', () => {
+        classroomState = 'multiplayer';
+        globalTimer = 60;
+        io.emit('state_update', { state: classroomState, timer: globalTimer, teams });
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            globalTimer--;
+            io.emit('timer_tick', globalTimer);
+            
+            if (globalTimer <= 0) {
+                clearInterval(timerInterval);
+                classroomState = 'scoreboard';
+                io.emit('state_update', { state: classroomState, timer: 0, teams });
+            }
+        }, 1000);
     });
 
     socket.on('disconnect', () => {
         delete players[socket.id];
-        io.emit('teacher_update', { players, teams });
+        io.emit('teacher_update', { players, teams, state: classroomState });
     });
 });
-// --------------------------------------------
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));

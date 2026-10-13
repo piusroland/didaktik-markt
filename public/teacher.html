@@ -9,39 +9,53 @@
         .panel { background: #444; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .student-item { padding: 10px; background: #555; margin: 5px 0; border-radius: 4px; display: flex; align-items: center; }
         .student-item input { margin-right: 10px; width: 20px; height: 20px; }
-        button { background: #28a745; color: white; border: none; padding: 10px 15px; font-size: 16px; cursor: pointer; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; font-size: 16px; cursor: pointer; border-radius: 4px; margin-right: 10px; }
+        .btn-start { background: #28a745; font-weight: bold; }
+        .btn-danger { background: #dc3545; }
     </style>
 </head>
 <body>
-    <h1>Lehrer Dashboard (Markt-Rallye)</h1>
-
+    <h1>Lehrer Dashboard</h1>
+    
     <div class="panel">
-        <h2>1. Schüler in der Lobby (Warten auf Zuweisung)</h2>
-        <div id="unassigned-list">Keine Schüler in der Lobby...</div>
-        
-        <br>
-        <input type="text" id="team-name-input" placeholder="Name für neues Team" style="padding: 10px; font-size: 16px;">
-        <button onclick="createTeam()">Ausgewählte als Team zusammenfügen</button>
+        <h2>Kontrollzentrum</h2>
+        <p>Aktueller Status: <strong id="status-display" style="color: #ffc107;">Freies Üben (Lokal)</strong></p>
+        <button class="btn-danger" onclick="socket.emit('open_lobby')">1. Lobby öffnen (Tablets sperren)</button>
+        <button class="btn-start" onclick="socket.emit('start_multiplayer')">3. Spiel Starten (60s Timer)</button>
     </div>
 
     <div class="panel">
-        <h2>2. Aktive Teams</h2>
-        <div id="active-teams">Noch keine Teams erstellt.</div>
+        <h2>2. Teams bilden</h2>
+        <p>Wähle 2 Schüler aus und klicke auf "Zusammenfügen". Der Name wird automatisch generiert (z.B. "Tomáš & Anna").</p>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <h3>Warteraum (Lobby)</h3>
+                <div id="unassigned-list">Keine Schüler in der Lobby...</div>
+                <br>
+                <button onclick="createTeam()">Ausgewählte zusammenfügen</button>
+            </div>
+            <div style="flex: 1;">
+                <h3>Aktive Teams</h3>
+                <div id="active-teams">Noch keine Teams erstellt.</div>
+            </div>
+        </div>
     </div>
 
     <script>
         const socket = io();
-        let currentPlayers = {};
 
         socket.on('teacher_update', (data) => {
-            currentPlayers = data.players;
+            // Update Status Text
+            const states = { 'practice': 'Freies Üben', 'lobby': 'Namenseingabe / Teamwahl', 'multiplayer': 'Spiel läuft!', 'scoreboard': 'Ergebnisse' };
+            document.getElementById('status-display').innerText = states[data.state];
+
+            // Render Unassigned Students
             const unassignedDiv = document.getElementById('unassigned-list');
             const teamsDiv = document.getElementById('active-teams');
             
             unassignedDiv.innerHTML = "";
             teamsDiv.innerHTML = "";
             
-            // Render Unassigned
             Object.entries(data.players).forEach(([id, player]) => {
                 if (!player.team) {
                     unassignedDiv.innerHTML += `
@@ -52,33 +66,22 @@
                 }
             });
 
-            // Render Teams
-            const teamMap = {};
-            Object.values(data.players).forEach(p => {
-                if (p.team) {
-                    if (!teamMap[p.team]) teamMap[p.team] = [];
-                    teamMap[p.team].push(p.name);
-                }
-            });
-
-            Object.entries(teamMap).forEach(([teamName, members]) => {
-                teamsDiv.innerHTML += `<div><strong>${teamName}:</strong> ${members.join(' + ')}</div>`;
+            // Render Teams and Scores
+            const sortedTeams = Object.entries(data.teams).sort((a, b) => b[1] - a[1]);
+            sortedTeams.forEach(([teamName, score]) => {
+                teamsDiv.innerHTML += `<div class="student-item" style="justify-content: space-between;"><span>👥 <strong>${teamName}</strong></span> <span>${score} Pkt</span></div>`;
             });
         });
 
         function createTeam() {
-            const teamName = document.getElementById('team-name-input').value || "Team " + Math.floor(Math.random() * 100);
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
-            
             const studentIds = Array.from(checkboxes).map(cb => cb.value);
             
-            if (studentIds.length === 0) {
-                alert("Bitte wähle mindestens einen Schüler aus!");
+            if (studentIds.length < 2) {
+                alert("Bitte wähle mindestens zwei Schüler aus!");
                 return;
             }
-
-            socket.emit('assign_team', { teamName, studentIds });
-            document.getElementById('team-name-input').value = ""; // clear input
+            socket.emit('assign_team', studentIds);
         }
     </script>
 </body>

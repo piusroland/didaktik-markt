@@ -70,41 +70,56 @@
     <div id="u2" class="tab-content">
         <h2>Die Markt-Rallye</h2>
         
-        <!-- Phase 1: Name eingeben -->
-        <div id="lobby-join" style="text-align: center; margin-bottom: 20px;">
-            <h3>Wie heißt du?</h3>
+        <!-- View 1: Practice Start -->
+        <div id="view-practice-start" style="text-align: center; margin: 30px 0;">
+            <h3>Freies Üben</h3>
+            <p>Trainiere so oft du willst. Du hast 60 Sekunden!</p>
+            <button onclick="startPractice()" style="padding: 10px 20px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 5px;">Übung Starten</button>
+        </div>
+
+        <!-- View 2: Lobby (Teacher triggered) -->
+        <div id="view-lobby" style="display: none; text-align: center;">
+            <h3 style="color: #dc3545;">🚨 Multiplayer-Runde startet!</h3>
+            <p>Gib deinen Namen ein, damit der Lehrer die Teams bilden kann:</p>
             <input type="text" id="player-name" placeholder="Dein Name" style="font-size: 18px; padding: 10px;">
             <br>
-            <button onclick="joinLobby()" style="font-size: 18px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Der Lobby beitreten</button>
+            <button onclick="joinLobby()" style="margin-top: 10px; padding: 10px 20px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 5px;">Bereit</button>
         </div>
 
-        <!-- Phase 2: Warten -->
-        <div id="lobby-wait" style="display: none; text-align: center; margin: 30px 0; font-size: 20px; color: #555;">
-            ⏳ Warten auf den Lehrer... <br><br> (Schau nach vorne!)
+        <!-- View 3: Waiting Room -->
+        <div id="view-waiting" style="display: none; text-align: center; font-size: 20px; margin: 30px 0;">
+            ⏳ Warten auf den Lehrer... <br><br> Team: <strong id="lobby-team-display">Noch nicht zugewiesen</strong>
         </div>
 
-        <!-- Phase 3: Spiel (versteckt bis Lehrer startet) -->
-        <div id="game-arena" class="game-arena">
+        <!-- View 4: Game Arena (Used for both modes) -->
+        <div id="view-game" style="display: none;">
             <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-bottom: 15px;">
-                <span id="my-team-display" style="color: #007bff;">Team</span>
+                <span id="score-display">Punkte: 0</span>
+                <span style="color: red;">⏱ <span id="timer-display">60</span>s</span>
                 <span>🔥 Streak: <span id="streak-counter">0</span></span>
             </div>
-
             <div class="question-box" id="question-text">Lade Frage...</div>
-            
             <div class="btn-grid">
                 <button class="suffix-btn" onclick="checkAnswer('-e', this)">-e</button>
                 <button class="suffix-btn" onclick="checkAnswer('-en', this)">-en</button>
                 <button class="suffix-btn" onclick="checkAnswer('-er', this)">-er</button>
                 <button class="suffix-btn" onclick="checkAnswer('-es', this)">-es</button>
             </div>
-            
-            <p id="game-feedback" style="height: 20px; margin-top: 15px; font-weight: bold;"></p>
+            <p id="game-feedback" style="height: 20px; margin-top: 15px; font-weight: bold; text-align: center;"></p>
         </div>
 
-        <div class="leaderboard" id="leaderboard-container" style="display:none;">
-            <h3 style="margin-top: 0;">🏆 Live-Punktestand</h3>
-            <div id="leaderboard-scores"></div>
+        <!-- View 5: End Screen -->
+        <div id="view-end" style="display: none; text-align: center; margin-top: 20px;">
+            <div id="practice-result" style="display: none;">
+                <h2>Zeit abgelaufen!</h2>
+                <p style="font-size: 24px;">Deine Punkte: <strong id="final-practice-score">0</strong></p>
+                <button onclick="document.getElementById('view-end').style.display='none'; document.getElementById('view-practice-start').style.display='block';" style="padding: 10px 20px; background: #28a745; color: white; border:none; border-radius: 5px;">Nochmal Spielen</button>
+            </div>
+
+            <div id="multiplayer-result" style="display: none;">
+                <h2>🏆 Endstand</h2>
+                <div id="leaderboard-scores" style="font-size: 20px; background: #fff; padding: 20px; border-radius: 8px; text-align: left; max-width: 400px; margin: 0 auto;"></div>
+            </div>
         </div>
     </div>
 
@@ -205,9 +220,13 @@
         }
 
         // --- Übung 2: Rallye Logic ---
+        let currentMode = 'practice'; // 'practice' or 'multiplayer'
         let myTeam = "";
-        let currentQuestion = {};
+        let localScore = 0;
         let streak = 0;
+        let localTimer = 60;
+        let localInterval = null;
+        let currentQuestion = {};
 
         const questions = [
             { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin = -en" },
@@ -216,25 +235,71 @@
             { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" }
         ];
 
-        function joinLobby() {
-            const name = document.getElementById('player-name').value;
-            if (!name) return;
-            
-            socket.emit('student_join', name);
-            
-            document.getElementById('lobby-join').style.display = 'none';
-            document.getElementById('lobby-wait').style.display = 'block';
+        function switchView(viewId) {
+            ['view-practice-start', 'view-lobby', 'view-waiting', 'view-game', 'view-end'].forEach(id => {
+                document.getElementById(id).style.display = (id === viewId) ? 'block' : 'none';
+            });
         }
 
-        // Triggered by the server when the teacher puts this student in a team
+        // --- Server Event Listeners (Teacher Overrides) ---
+        socket.on('state_update', (data) => {
+            if (data.state === 'lobby') {
+                clearInterval(localInterval);
+                switchView('view-lobby');
+            } else if (data.state === 'multiplayer') {
+                currentMode = 'multiplayer';
+                localScore = 0;
+                streak = 0;
+                document.getElementById('score-display').innerText = myTeam;
+                switchView('view-game');
+                nextQuestion();
+            } else if (data.state === 'scoreboard') {
+                showLeaderboard(data.teams);
+            }
+        });
+
+        socket.on('timer_tick', (time) => {
+            if (currentMode === 'multiplayer') {
+                document.getElementById('timer-display').innerText = time;
+            }
+        });
+
         socket.on('team_assigned', (teamName) => {
             myTeam = teamName;
-            document.getElementById('lobby-wait').style.display = 'none';
-            document.getElementById('game-arena').style.display = 'block';
-            document.getElementById('leaderboard-container').style.display = 'block';
-            document.getElementById('my-team-display').innerText = `🏆 ${teamName}`;
-            nextQuestion();
+            document.getElementById('lobby-team-display').innerText = teamName;
         });
+
+        // --- Game Actions ---
+        function startPractice() {
+            currentMode = 'practice';
+            localScore = 0;
+            streak = 0;
+            localTimer = 60;
+            document.getElementById('score-display').innerText = `Punkte: 0`;
+            switchView('view-game');
+            nextQuestion();
+            
+            clearInterval(localInterval);
+            localInterval = setInterval(() => {
+                localTimer--;
+                document.getElementById('timer-display').innerText = localTimer;
+                if (localTimer <= 0) {
+                    clearInterval(localInterval);
+                    switchView('view-end');
+                    document.getElementById('practice-result').style.display = 'block';
+                    document.getElementById('multiplayer-result').style.display = 'none';
+                    document.getElementById('final-practice-score').innerText = localScore;
+                }
+            }, 1000);
+        }
+
+        function joinLobby() {
+            const name = document.getElementById('player-name').value;
+            if (name) {
+                socket.emit('student_join', name);
+                switchView('view-waiting');
+            }
+        }
 
         function nextQuestion() {
             document.querySelectorAll('.suffix-btn').forEach(btn => {
@@ -248,30 +313,48 @@
 
         function checkAnswer(selectedSuffix, btnElement) {
             document.querySelectorAll('.suffix-btn').forEach(b => b.disabled = true);
+            
             if (selectedSuffix === currentQuestion.answer) {
                 btnElement.classList.add('correct');
                 streak++;
+                
+                // Base 10 points + Streak Bonus
+                let earnedPoints = 10;
+                if (streak >= 3) earnedPoints += 5;  // +5 bonus
+                if (streak >= 6) earnedPoints += 10; // +15 total bonus for long streaks
+                
+                localScore += earnedPoints;
                 document.getElementById('streak-counter').innerText = streak;
-                socket.emit('add_point', myTeam); // Send point to server
-                setTimeout(nextQuestion, 1000);
+                
+                if (currentMode === 'practice') {
+                    document.getElementById('score-display').innerText = `Punkte: ${localScore}`;
+                } else if (currentMode === 'multiplayer') {
+                    socket.emit('add_point', { team: myTeam, points: earnedPoints });
+                }
+                setTimeout(nextQuestion, 800);
             } else {
                 btnElement.classList.add('wrong');
                 streak = 0;
                 document.getElementById('streak-counter').innerText = streak;
                 document.getElementById('game-feedback').style.color = "red";
-                document.getElementById('game-feedback').innerText = `Falsch! Regel: ${currentQuestion.rule}`;
-                setTimeout(nextQuestion, 3000);
+                document.getElementById('game-feedback').innerText = `Falsch! ${currentQuestion.rule}`;
+                setTimeout(nextQuestion, 2500);
             }
         }
 
-        socket.on('leaderboard_update', (teamsData) => {
+        function showLeaderboard(teamsData) {
+            switchView('view-end');
+            document.getElementById('practice-result').style.display = 'none';
+            document.getElementById('multiplayer-result').style.display = 'block';
+            
             const board = document.getElementById('leaderboard-scores');
             board.innerHTML = "";
             const sortedTeams = Object.entries(teamsData).sort((a, b) => b[1] - a[1]);
-            sortedTeams.forEach(([team, score]) => {
-                board.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee;"><span>${team}</span> <strong>${score} Pts</strong></div>`;
+            sortedTeams.forEach(([team, score], index) => {
+                let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "🏁";
+                board.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><span>${medal} ${team}</span> <strong>${score} Pts</strong></div>`;
             });
-        });
+        }
     </script>
 </body>
 </html>
