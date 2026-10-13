@@ -70,26 +70,27 @@
     <div id="u2" class="tab-content">
         <h2>Die Markt-Rallye</h2>
         
-        <div id="team-selection" style="text-align: center; margin-bottom: 20px;">
-            <h3>Wähle dein Team:</h3>
-            <select id="team-selector" style="font-size: 18px; padding: 10px;">
-                <option value="Team Apfel">🍎 Team Apfel</option>
-                <option value="Team Gurke">🥒 Team Gurke</option>
-                <option value="Team Käse">🧀 Team Käse</option>
-                <option value="Team Brot">🍞 Team Brot</option>
-            </select>
-            <button onclick="startGame()" style="font-size: 18px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Bereit!</button>
+        <!-- Phase 1: Name eingeben -->
+        <div id="lobby-join" style="text-align: center; margin-bottom: 20px;">
+            <h3>Wie heißt du?</h3>
+            <input type="text" id="player-name" placeholder="Dein Name" style="font-size: 18px; padding: 10px;">
+            <br>
+            <button onclick="joinLobby()" style="font-size: 18px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Der Lobby beitreten</button>
         </div>
 
+        <!-- Phase 2: Warten -->
+        <div id="lobby-wait" style="display: none; text-align: center; margin: 30px 0; font-size: 20px; color: #555;">
+            ⏳ Warten auf den Lehrer... <br><br> (Schau nach vorne!)
+        </div>
+
+        <!-- Phase 3: Spiel (versteckt bis Lehrer startet) -->
         <div id="game-arena" class="game-arena">
             <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-bottom: 15px;">
-                <span id="my-team-display">Team</span>
+                <span id="my-team-display" style="color: #007bff;">Team</span>
                 <span>🔥 Streak: <span id="streak-counter">0</span></span>
             </div>
 
-            <div class="question-box" id="question-text">
-                Lade Frage...
-            </div>
+            <div class="question-box" id="question-text">Lade Frage...</div>
             
             <div class="btn-grid">
                 <button class="suffix-btn" onclick="checkAnswer('-e', this)">-e</button>
@@ -101,7 +102,7 @@
             <p id="game-feedback" style="height: 20px; margin-top: 15px; font-weight: bold;"></p>
         </div>
 
-        <div class="leaderboard">
+        <div class="leaderboard" id="leaderboard-container" style="display:none;">
             <h3 style="margin-top: 0;">🏆 Live-Punktestand</h3>
             <div id="leaderboard-scores"></div>
         </div>
@@ -203,7 +204,7 @@
             display.innerHTML = grammarData[itemKey][currentCase];
         }
 
-        // Übung 2: Rallye Logic
+        // --- Übung 2: Rallye Logic ---
         let myTeam = "";
         let currentQuestion = {};
         let streak = 0;
@@ -212,68 +213,63 @@
             { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin = -en" },
             { text: "Das ist ein alt<span class='blank'>___</span> Käse.", answer: "-er", rule: "Nominativ + Maskulin (ein) = -er" },
             { text: "Ich nehme die grün<span class='blank'>___</span> Gurke.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
-            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" },
-            { text: "Wir suchen ein frisch<span class='blank'>___</span> Brot.", answer: "-es", rule: "Akkusativ + Neutrum (ein) = -es" },
-            { text: "Der rot<span class='blank'>___</span> Apfel ist lecker.", answer: "-e", rule: "Nominativ + Maskulin (der) = -e" }
+            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" }
         ];
 
-        function startGame() {
-            myTeam = document.getElementById('team-selector').value;
-            document.getElementById('team-selection').style.display = 'none';
-            document.getElementById('game-arena').style.display = 'block';
-            document.getElementById('my-team-display').innerText = myTeam;
-            nextQuestion();
+        function joinLobby() {
+            const name = document.getElementById('player-name').value;
+            if (!name) return;
+            
+            socket.emit('student_join', name);
+            
+            document.getElementById('lobby-join').style.display = 'none';
+            document.getElementById('lobby-wait').style.display = 'block';
         }
 
+        // Triggered by the server when the teacher puts this student in a team
+        socket.on('team_assigned', (teamName) => {
+            myTeam = teamName;
+            document.getElementById('lobby-wait').style.display = 'none';
+            document.getElementById('game-arena').style.display = 'block';
+            document.getElementById('leaderboard-container').style.display = 'block';
+            document.getElementById('my-team-display').innerText = `🏆 ${teamName}`;
+            nextQuestion();
+        });
+
         function nextQuestion() {
-            // Reset button colors
             document.querySelectorAll('.suffix-btn').forEach(btn => {
                 btn.classList.remove('correct', 'wrong');
                 btn.disabled = false;
             });
             document.getElementById('game-feedback').innerText = "";
-            
-            // Pick random question
             currentQuestion = questions[Math.floor(Math.random() * questions.length)];
             document.getElementById('question-text').innerHTML = currentQuestion.text;
         }
 
         function checkAnswer(selectedSuffix, btnElement) {
-            // Disable all buttons to prevent spam clicking
             document.querySelectorAll('.suffix-btn').forEach(b => b.disabled = true);
-
             if (selectedSuffix === currentQuestion.answer) {
                 btnElement.classList.add('correct');
                 streak++;
                 document.getElementById('streak-counter').innerText = streak;
-                document.getElementById('game-feedback').style.color = "green";
-                document.getElementById('game-feedback').innerText = "Richtig!";
-                
-                // Tell the server to add points to our team
-                socket.emit('add_point', myTeam);
-                
-                setTimeout(nextQuestion, 1000); // Load next question after 1 second
+                socket.emit('add_point', myTeam); // Send point to server
+                setTimeout(nextQuestion, 1000);
             } else {
                 btnElement.classList.add('wrong');
-                streak = 0; // Reset streak
+                streak = 0;
                 document.getElementById('streak-counter').innerText = streak;
                 document.getElementById('game-feedback').style.color = "red";
                 document.getElementById('game-feedback').innerText = `Falsch! Regel: ${currentQuestion.rule}`;
-                
-                setTimeout(nextQuestion, 3000); // Wait longer so they can read the rule
+                setTimeout(nextQuestion, 3000);
             }
         }
 
-        // Listen for live leaderboard updates from the server
         socket.on('leaderboard_update', (teamsData) => {
             const board = document.getElementById('leaderboard-scores');
             board.innerHTML = "";
-            
-            // Sort teams by highest score
             const sortedTeams = Object.entries(teamsData).sort((a, b) => b[1] - a[1]);
-            
             sortedTeams.forEach(([team, score]) => {
-                board.innerHTML += `<div class="score-row"><span>${team}</span> <strong>${score} Pts</strong></div>`;
+                board.innerHTML += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee;"><span>${team}</span> <strong>${score} Pts</strong></div>`;
             });
         });
     </script>

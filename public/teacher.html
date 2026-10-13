@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lehrer Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #333; color: white; }
+        .panel { background: #444; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .student-item { padding: 10px; background: #555; margin: 5px 0; border-radius: 4px; display: flex; align-items: center; }
+        .student-item input { margin-right: 10px; width: 20px; height: 20px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 15px; font-size: 16px; cursor: pointer; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Lehrer Dashboard (Markt-Rallye)</h1>
+
+    <div class="panel">
+        <h2>1. Schüler in der Lobby (Warten auf Zuweisung)</h2>
+        <div id="unassigned-list">Keine Schüler in der Lobby...</div>
+        
+        <br>
+        <input type="text" id="team-name-input" placeholder="Name für neues Team" style="padding: 10px; font-size: 16px;">
+        <button onclick="createTeam()">Ausgewählte als Team zusammenfügen</button>
+    </div>
+
+    <div class="panel">
+        <h2>2. Aktive Teams</h2>
+        <div id="active-teams">Noch keine Teams erstellt.</div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentPlayers = {};
+
+        socket.on('teacher_update', (data) => {
+            currentPlayers = data.players;
+            const unassignedDiv = document.getElementById('unassigned-list');
+            const teamsDiv = document.getElementById('active-teams');
+            
+            unassignedDiv.innerHTML = "";
+            teamsDiv.innerHTML = "";
+            
+            // Render Unassigned
+            Object.entries(data.players).forEach(([id, player]) => {
+                if (!player.team) {
+                    unassignedDiv.innerHTML += `
+                        <div class="student-item">
+                            <input type="checkbox" class="student-checkbox" value="${id}">
+                            ${player.name}
+                        </div>`;
+                }
+            });
+
+            // Render Teams
+            const teamMap = {};
+            Object.values(data.players).forEach(p => {
+                if (p.team) {
+                    if (!teamMap[p.team]) teamMap[p.team] = [];
+                    teamMap[p.team].push(p.name);
+                }
+            });
+
+            Object.entries(teamMap).forEach(([teamName, members]) => {
+                teamsDiv.innerHTML += `<div><strong>${teamName}:</strong> ${members.join(' + ')}</div>`;
+            });
+        });
+
+        function createTeam() {
+            const teamName = document.getElementById('team-name-input').value || "Team " + Math.floor(Math.random() * 100);
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            
+            const studentIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (studentIds.length === 0) {
+                alert("Bitte wähle mindestens einen Schüler aus!");
+                return;
+            }
+
+            socket.emit('assign_team', { teamName, studentIds });
+            document.getElementById('team-name-input').value = ""; // clear input
+        }
+    </script>
+</body>
+</html>

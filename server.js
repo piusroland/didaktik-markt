@@ -46,31 +46,51 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// --- ÜBUNG 2: Socket.io Multiplayer Logic ---
-const teams = {
-    "Team Apfel": 0,
-    "Team Gurke": 0,
-    "Team Käse": 0,
-    "Team Brot": 0
-};
+// --- ÜBUNG 2: Lobby & Teacher Pairing Logic ---
+const players = {}; // socket.id -> { name, team }
+const teams = {};   // teamName -> score
 
 io.on('connection', (socket) => {
-    console.log('Tablet verbunden:', socket.id);
+    console.log('Verbunden:', socket.id);
     
-    // Send the current leaderboard to anyone who connects
+    // Send current state to teacher dashboard
+    socket.emit('teacher_update', { players, teams });
     socket.emit('leaderboard_update', teams);
 
-    // When a student answers correctly
+    // 1. Student enters their name
+    socket.on('student_join', (name) => {
+        players[socket.id] = { name: name, team: null };
+        io.emit('teacher_update', { players, teams }); // Update teacher screen
+    });
+
+    // 2. Teacher pairs students into a team
+    socket.on('assign_team', (data) => {
+        const { teamName, studentIds } = data;
+        
+        if (!teams[teamName]) teams[teamName] = 0; // Initialize score
+        
+        studentIds.forEach(id => {
+            if (players[id]) {
+                players[id].team = teamName;
+                io.to(id).emit('team_assigned', teamName); // Wake up the student's tablet
+            }
+        });
+        
+        io.emit('teacher_update', { players, teams });
+        io.emit('leaderboard_update', teams);
+    });
+
+    // 3. Gameplay scoring
     socket.on('add_point', (teamName) => {
         if (teams[teamName] !== undefined) {
-            teams[teamName] += 10; // Add 10 points
-            // Broadcast the new scores to ALL connected tablets instantly
+            teams[teamName] += 10;
             io.emit('leaderboard_update', teams); 
         }
     });
 
     socket.on('disconnect', () => {
-        console.log('Tablet getrennt:', socket.id);
+        delete players[socket.id];
+        io.emit('teacher_update', { players, teams });
     });
 });
 // --------------------------------------------
