@@ -11,6 +11,18 @@
         .tab-content.active { display: block; }
         nav button { padding: 10px; margin-right: 5px; cursor: pointer; }
         .active-btn { background: #007bff; color: white; }
+
+        /* Übung 1 Styles */
+        .market-grid { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .market-item { font-size: 60px; cursor: pointer; padding: 20px; background: #fff; border: 3px solid #ddd; border-radius: 15px; transition: transform 0.1s; user-select: none; }
+        .market-item:active { transform: scale(0.95); border-color: #007bff; }
+        .grammar-box { margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px; font-size: 24px; text-align: center; min-height: 90px; line-height: 1.5; }
+        
+        /* The Didactic Signal: Red bold text for the morphological ending */
+        .signal { color: #d9534f; font-weight: bold; text-decoration: underline; }
+        
+        .mode-switch { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
+        .mode-switch label { cursor: pointer; padding: 10px; }
     </style>
 </head>
 <body>
@@ -21,10 +33,24 @@
         <button onclick="switchTab('u3', this)">3. Marktschreier</button>
     </nav>
 
+    <!-- Übung 1: Wimmelbild -->
     <div id="u1" class="tab-content active">
-        <h2>Das Wimmelbild</h2>
-        <div style="height: 200px; background: #ddd; text-align: center; padding-top: 50px;">
-            <p>Interaktives Marktbild (Platzhalter)</p>
+        <h2>Das Markt-Wimmelbild</h2>
+        
+        <div class="mode-switch">
+            <label><input type="radio" name="case-toggle" value="nom" checked onchange="updateMode()"> 1. Erkunden (Nominativ)</label>
+            <label style="margin-left: 20px;"><input type="radio" name="case-toggle" value="acc" onchange="updateMode()"> 2. Einkaufen (Akkusativ)</label>
+        </div>
+
+        <div class="market-grid">
+            <div class="market-item" onclick="showGrammar('apfel')">🍎</div>
+            <div class="market-item" onclick="showGrammar('gurke')">🥒</div>
+            <div class="market-item" onclick="showGrammar('brot')">🍞</div>
+            <div class="market-item" onclick="showGrammar('kaese')">🧀</div>
+        </div>
+
+        <div id="grammar-display" class="grammar-box">
+            Tippe auf ein Lebensmittel!
         </div>
     </div>
 
@@ -88,6 +114,46 @@
                 btn.disabled = false;
                 btn.innerText = "Sagen";
             }
+        }
+
+        // Übung 1: Wimmelbild Logic
+        let currentCase = 'nom';
+        let currentItem = null;
+
+        // Data dictionary with morphological signaling pre-formatted
+        const grammarData = {
+            apfel: { // Maskulinum
+                nom: "d<span class='signal'>er</span> rot<span class='signal'>e</span> Apfel <br> ein rot<span class='signal'>er</span> Apfel",
+                acc: "Ich sehe d<span class='signal'>en</span> rot<span class='signal'>en</span> Apfel <br> Ich sehe ein<span class='signal'>en</span> rot<span class='signal'>en</span> Apfel"
+            },
+            gurke: { // Femininum
+                nom: "di<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke <br> ein<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke",
+                acc: "Ich kaufe di<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke <br> Ich kaufe ein<span class='signal'>e</span> grün<span class='signal'>e</span> Gurke"
+            },
+            brot: { // Neutrum
+                nom: "da<span class='signal'>s</span> frisch<span class='signal'>e</span> Brot <br> ein frisch<span class='signal'>es</span> Brot",
+                acc: "Ich nehme da<span class='signal'>s</span> frisch<span class='signal'>e</span> Brot <br> Ich nehme ein frisch<span class='signal'>es</span> Brot"
+            },
+            kaese: { // Maskulinum
+                nom: "d<span class='signal'>er</span> alt<span class='signal'>e</span> Käse <br> ein alt<span class='signal'>er</span> Käse",
+                acc: "Ich probiere d<span class='signal'>en</span> alt<span class='signal'>en</span> Käse <br> Ich probiere ein<span class='signal'>en</span> alt<span class='signal'>en</span> Käse"
+            }
+        };
+
+        function updateMode() {
+            // Get the currently selected radio button (nom or acc)
+            currentCase = document.querySelector('input[name="case-toggle"]:checked').value;
+            
+            // If an item was already tapped, update the text immediately to the new case
+            if (currentItem) {
+                showGrammar(currentItem);
+            }
+        }
+
+        function showGrammar(itemKey) {
+            currentItem = itemKey;
+            const display = document.getElementById('grammar-display');
+            display.innerHTML = grammarData[itemKey][currentCase];
         }
     </script>
 </body>
