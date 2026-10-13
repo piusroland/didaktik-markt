@@ -46,17 +46,34 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// --- ÜBUNG 2: Socket.io Multiplayer Logic ---
+const teams = {
+    "Team Apfel": 0,
+    "Team Gurke": 0,
+    "Team Käse": 0,
+    "Team Brot": 0
+};
+
 io.on('connection', (socket) => {
     console.log('Tablet verbunden:', socket.id);
     
-    socket.on('team_score_update', (data) => {
-        io.emit('board_update', data); 
+    // Send the current leaderboard to anyone who connects
+    socket.emit('leaderboard_update', teams);
+
+    // When a student answers correctly
+    socket.on('add_point', (teamName) => {
+        if (teams[teamName] !== undefined) {
+            teams[teamName] += 10; // Add 10 points
+            // Broadcast the new scores to ALL connected tablets instantly
+            io.emit('leaderboard_update', teams); 
+        }
     });
 
     socket.on('disconnect', () => {
-        console.log('Tablet getrennt');
+        console.log('Tablet getrennt:', socket.id);
     });
 });
+// --------------------------------------------
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));

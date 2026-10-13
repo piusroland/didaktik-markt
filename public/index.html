@@ -23,6 +23,18 @@
         
         .mode-switch { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
         .mode-switch label { cursor: pointer; padding: 10px; }
+
+        /* Übung 2 Styles */
+        .game-arena { display: none; text-align: center; margin-top: 20px; }
+        .question-box { font-size: 28px; padding: 20px; background: #fff; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px; }
+        .blank { display: inline-block; width: 60px; border-bottom: 3px solid #000; text-align: center; color: #007bff; font-weight: bold; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 400px; margin: 0 auto; }
+        .suffix-btn { font-size: 24px; padding: 15px; border: none; border-radius: 8px; background: #e9ecef; cursor: pointer; transition: 0.2s; }
+        .suffix-btn:active { transform: scale(0.95); }
+        .correct { background: #28a745 !important; color: white; }
+        .wrong { background: #dc3545 !important; color: white; }
+        .leaderboard { margin-top: 30px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #ccc; }
+        .score-row { display: flex; justify-content: space-between; font-size: 18px; padding: 5px 0; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -54,10 +66,45 @@
         </div>
     </div>
 
+    <!-- Übung 2: Rallye -->
     <div id="u2" class="tab-content">
         <h2>Die Markt-Rallye</h2>
-        <p id="ws-status">🔴 Verbinde...</p>
-        <button onclick="sendScore()">Punkt senden (Test)</button>
+        
+        <div id="team-selection" style="text-align: center; margin-bottom: 20px;">
+            <h3>Wähle dein Team:</h3>
+            <select id="team-selector" style="font-size: 18px; padding: 10px;">
+                <option value="Team Apfel">🍎 Team Apfel</option>
+                <option value="Team Gurke">🥒 Team Gurke</option>
+                <option value="Team Käse">🧀 Team Käse</option>
+                <option value="Team Brot">🍞 Team Brot</option>
+            </select>
+            <button onclick="startGame()" style="font-size: 18px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Bereit!</button>
+        </div>
+
+        <div id="game-arena" class="game-arena">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-bottom: 15px;">
+                <span id="my-team-display">Team</span>
+                <span>🔥 Streak: <span id="streak-counter">0</span></span>
+            </div>
+
+            <div class="question-box" id="question-text">
+                Lade Frage...
+            </div>
+            
+            <div class="btn-grid">
+                <button class="suffix-btn" onclick="checkAnswer('-e', this)">-e</button>
+                <button class="suffix-btn" onclick="checkAnswer('-en', this)">-en</button>
+                <button class="suffix-btn" onclick="checkAnswer('-er', this)">-er</button>
+                <button class="suffix-btn" onclick="checkAnswer('-es', this)">-es</button>
+            </div>
+            
+            <p id="game-feedback" style="height: 20px; margin-top: 15px; font-weight: bold;"></p>
+        </div>
+
+        <div class="leaderboard">
+            <h3 style="margin-top: 0;">🏆 Live-Punktestand</h3>
+            <div id="leaderboard-scores"></div>
+        </div>
     </div>
 
     <div id="u3" class="tab-content">
@@ -155,6 +202,80 @@
             const display = document.getElementById('grammar-display');
             display.innerHTML = grammarData[itemKey][currentCase];
         }
+
+        // Übung 2: Rallye Logic
+        let myTeam = "";
+        let currentQuestion = {};
+        let streak = 0;
+
+        const questions = [
+            { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin = -en" },
+            { text: "Das ist ein alt<span class='blank'>___</span> Käse.", answer: "-er", rule: "Nominativ + Maskulin (ein) = -er" },
+            { text: "Ich nehme die grün<span class='blank'>___</span> Gurke.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
+            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" },
+            { text: "Wir suchen ein frisch<span class='blank'>___</span> Brot.", answer: "-es", rule: "Akkusativ + Neutrum (ein) = -es" },
+            { text: "Der rot<span class='blank'>___</span> Apfel ist lecker.", answer: "-e", rule: "Nominativ + Maskulin (der) = -e" }
+        ];
+
+        function startGame() {
+            myTeam = document.getElementById('team-selector').value;
+            document.getElementById('team-selection').style.display = 'none';
+            document.getElementById('game-arena').style.display = 'block';
+            document.getElementById('my-team-display').innerText = myTeam;
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            // Reset button colors
+            document.querySelectorAll('.suffix-btn').forEach(btn => {
+                btn.classList.remove('correct', 'wrong');
+                btn.disabled = false;
+            });
+            document.getElementById('game-feedback').innerText = "";
+            
+            // Pick random question
+            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('question-text').innerHTML = currentQuestion.text;
+        }
+
+        function checkAnswer(selectedSuffix, btnElement) {
+            // Disable all buttons to prevent spam clicking
+            document.querySelectorAll('.suffix-btn').forEach(b => b.disabled = true);
+
+            if (selectedSuffix === currentQuestion.answer) {
+                btnElement.classList.add('correct');
+                streak++;
+                document.getElementById('streak-counter').innerText = streak;
+                document.getElementById('game-feedback').style.color = "green";
+                document.getElementById('game-feedback').innerText = "Richtig!";
+                
+                // Tell the server to add points to our team
+                socket.emit('add_point', myTeam);
+                
+                setTimeout(nextQuestion, 1000); // Load next question after 1 second
+            } else {
+                btnElement.classList.add('wrong');
+                streak = 0; // Reset streak
+                document.getElementById('streak-counter').innerText = streak;
+                document.getElementById('game-feedback').style.color = "red";
+                document.getElementById('game-feedback').innerText = `Falsch! Regel: ${currentQuestion.rule}`;
+                
+                setTimeout(nextQuestion, 3000); // Wait longer so they can read the rule
+            }
+        }
+
+        // Listen for live leaderboard updates from the server
+        socket.on('leaderboard_update', (teamsData) => {
+            const board = document.getElementById('leaderboard-scores');
+            board.innerHTML = "";
+            
+            // Sort teams by highest score
+            const sortedTeams = Object.entries(teamsData).sort((a, b) => b[1] - a[1]);
+            
+            sortedTeams.forEach(([team, score]) => {
+                board.innerHTML += `<div class="score-row"><span>${team}</span> <strong>${score} Pts</strong></div>`;
+            });
+        });
     </script>
 </body>
 </html>
