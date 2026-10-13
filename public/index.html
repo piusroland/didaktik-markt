@@ -131,13 +131,8 @@
             <!-- Marktstand -->
             <div style="flex: 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ccc;">
                 <h3 style="margin-top: 0;">Marktstand</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 18px;">
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🍎 Roter Apfel</div>
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🍏 Grüner Apfel</div>
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🍞 Frisches Brot</div>
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🥖 Altes Brot</div>
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🥒 Grüne Gurke</div>
-                    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">🥒 Gelbe Gurke</div>
+                <div id="market-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 18px;">
+                    <!-- Items will be injected here by JavaScript -->
                 </div>
             </div>
 
@@ -394,6 +389,33 @@
         // --- Übung 3: Marktschreier Logic ---
         let chatHistory = [];
         let basketItems = [];
+        let currentInventory = [];
+
+        const masterInventory = [
+            "🍎 Roter Apfel", "🍏 Grüner Apfel", 
+            "🍞 Frisches Brot", "🥖 Altes Brot", 
+            "🥒 Grüne Gurke", "🥒 Gelbe Gurke",
+            "🍅 Rote Tomate", "🍅 Grüne Tomate",
+            "🧀 Alter Käse", "🧀 Milder Käse",
+            "🥚 Weißes Ei", "🥚 Braunes Ei",
+            "🧅 Rote Zwiebel", "🧅 Weiße Zwiebel"
+        ];
+
+        // Randomly pick 6 items and update the UI
+        function generateInventory() {
+            // Shuffle array using Fisher-Yates logic
+            let shuffled = [...masterInventory].sort(() => 0.5 - Math.random());
+            currentInventory = shuffled.slice(0, 6); // Take first 6
+            
+            const grid = document.getElementById('market-grid');
+            grid.innerHTML = "";
+            currentInventory.forEach(item => {
+                grid.innerHTML += `<div style="padding: 10px; background: #f8f9fa; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${item}</div>`;
+            });
+        }
+
+        // Call it immediately so the market is populated when the page loads
+        generateInventory();
 
         async function sendChat() {
             const inputField = document.getElementById('msg');
@@ -436,7 +458,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         history: chatHistory, 
-                        basket: basketItems // We now send the array of bought items!
+                        basket: basketItems,
+                        inventory: currentInventory // <--- Neues Feld!
                     })
                 });
                 
@@ -491,6 +514,11 @@
             document.getElementById('restart-btn').style.display = 'none';
             document.getElementById('msg').disabled = false;
             document.getElementById('send-btn').disabled = false;
+
+            document.getElementById('msg').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            
+            generateInventory(); // Generate new items for the new round
         }
     </script>
 </body>
