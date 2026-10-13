@@ -338,8 +338,6 @@
                 chatHistory.push({ role: 'assistant', content: data.vendor_reply });
                 chatBox.innerHTML += `<p><strong>Verkäufer:</strong> ${data.vendor_reply}</p>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
-                
-                document.getElementById('feedback').innerText = data.grammar_correct ? "" : data.didactic_feedback;
 
                 if (data.item_bought) {
                     basketItems.push(data.item_bought);
