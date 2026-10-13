@@ -436,7 +436,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         history: chatHistory, 
-                        basketCount: basketItems.length 
+                        basket: basketItems // We now send the array of bought items!
                     })
                 });
                 
