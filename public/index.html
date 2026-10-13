@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marktplatz Deutsch</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 8px; }
+        .tab-content.active { display: block; }
+        nav button { padding: 10px; margin-right: 5px; cursor: pointer; }
+        .active-btn { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <button onclick="switchTab('u1', this)" class="active-btn">1. Wimmelbild</button>
+        <button onclick="switchTab('u2', this)">2. Rallye</button>
+        <button onclick="switchTab('u3', this)">3. Marktschreier</button>
+    </nav>
+
+    <div id="u1" class="tab-content active">
+        <h2>Das Wimmelbild</h2>
+        <div style="height: 200px; background: #ddd; text-align: center; padding-top: 50px;">
+            <p>Interaktives Marktbild (Platzhalter)</p>
+        </div>
+    </div>
+
+    <div id="u2" class="tab-content">
+        <h2>Die Markt-Rallye</h2>
+        <p id="ws-status">🔴 Verbinde...</p>
+        <button onclick="sendScore()">Punkt senden (Test)</button>
+    </div>
+
+    <div id="u3" class="tab-content">
+        <h2>Der Marktschreier</h2>
+        <div id="chat" style="height: 150px; overflow-y: scroll; border: 1px solid #ccc; margin-bottom: 10px; padding: 10px;"></div>
+        <input type="text" id="msg" placeholder="Ich möchte..." style="width: 70%;">
+        <button id="send-btn" onclick="sendChat()">Sagen</button>
+        <p id="feedback" style="color: green; font-weight: bold;"></p>
+    </div>
+
+    <script>
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-btn'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active-btn');
+        }
+
+        const socket = io();
+        socket.on('connect', () => {
+            document.getElementById('ws-status').innerText = '🟢 Live mit Server verbunden';
+        });
+        
+        function sendScore() {
+            socket.emit('team_score_update', { team: 'Team A', points: 10 });
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('msg').value;
+            if (!input) return;
+            
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            btn.innerText = "Verkäufer denkt nach...";
+            
+            document.getElementById('chat').innerHTML += `<p><strong>Du:</strong> ${input}</p>`;
+            document.getElementById('msg').value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: input })
+                });
+                
+                if (!res.ok) throw new Error("Rate limit");
+                
+                const data = await res.json();
+                document.getElementById('chat').innerHTML += `<p><strong>Verkäufer:</strong> ${data.vendor_reply}</p>`;
+                document.getElementById('feedback').innerText = data.didactic_feedback;
+            } catch (e) {
+                document.getElementById('feedback').innerText = "Der Markt ist gerade sehr voll! Bitte in ein paar Sekunden nochmal probieren.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Sagen";
+            }
+        }
+    </script>
+</body>
+</html>
