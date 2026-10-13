@@ -155,7 +155,15 @@
     </div>
 
     <script>
-        // Globale Navigation durch den Lehrer
+        // ==========================================
+        // 🌐 GLOBALE NAVIGATION & SOCKET SETUP
+        // ==========================================
+        const socket = io();
+        
+        socket.on('connect', () => {
+            document.getElementById('ws-status').innerText = '🟢 Live mit Server verbunden';
+        });
+
         function setExercise(id) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -165,51 +173,12 @@
             setExercise(exerciseId);
         });
 
-        const socket = io();
-        socket.on('connect', () => {
-            document.getElementById('ws-status').innerText = '🟢 Live mit Server verbunden';
-        });
-        
-        function sendScore() {
-            socket.emit('team_score_update', { team: 'Team A', points: 10 });
-        }
-
-        async function sendChat() {
-            const input = document.getElementById('msg').value;
-            if (!input) return;
-            
-            const btn = document.getElementById('send-btn');
-            btn.disabled = true;
-            btn.innerText = "Verkäufer denkt nach...";
-            
-            document.getElementById('chat').innerHTML += `<p><strong>Du:</strong> ${input}</p>`;
-            document.getElementById('msg').value = '';
-
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: input })
-                });
-                
-                if (!res.ok) throw new Error("Rate limit");
-                
-                const data = await res.json();
-                document.getElementById('chat').innerHTML += `<p><strong>Verkäufer:</strong> ${data.vendor_reply}</p>`;
-                document.getElementById('feedback').innerText = data.didactic_feedback;
-            } catch (e) {
-                document.getElementById('feedback').innerText = "Der Markt ist gerade sehr voll! Bitte in ein paar Sekunden nochmal probieren.";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Sagen";
-            }
-        }
-
-        // Übung 1: Wimmelbild Logic
+        // ==========================================
+        // 🍎 ÜBUNG 1: WIMMELBILD
+        // ==========================================
         let currentCase = 'nom';
         let currentItem = null;
 
-        // Data dictionary with morphological signaling pre-formatted
         const grammarData = {
             apfel: { // Maskulinum
                 nom: "d<span class='signal'>er</span> rot<span class='signal'>e</span> Apfel <br> ein rot<span class='signal'>er</span> Apfel",
@@ -229,8 +198,14 @@
             }
         };
 
-        // Listener for live updates from the teacher
-        socket.on('wimmelbild_update', (mode) => {
+        function showGrammar(itemKey) {
+            currentItem = itemKey;
+            const display = document.getElementById('grammar-display');
+            display.innerHTML = grammarData[itemKey][currentCase];
+        }
+
+        // Sichere Hilfsfunktion für das Umschalten von Nom/Akk
+        function updateWimmelbildUI(mode) {
             currentCase = mode;
             const statusDiv = document.getElementById('wimmelbild-status');
             
@@ -242,20 +217,19 @@
                 statusDiv.style.color = "#28a745";
             }
             
-            // If the student currently has an item open, refresh its grammar immediately
             if (currentItem) {
                 showGrammar(currentItem);
             }
-        });
-
-        function showGrammar(itemKey) {
-            currentItem = itemKey;
-            const display = document.getElementById('grammar-display');
-            display.innerHTML = grammarData[itemKey][currentCase];
         }
 
-        // --- Übung 2: Rallye Logic ---
-        let currentMode = 'practice'; // 'practice' or 'multiplayer'
+        socket.on('wimmelbild_update', (mode) => {
+            updateWimmelbildUI(mode);
+        });
+
+        // ==========================================
+        // ⏱️ ÜBUNG 2: RALLYE
+        // ==========================================
+        let currentMode = 'practice'; 
         let myTeam = "";
         let localScore = 0;
         let streak = 0;
@@ -276,17 +250,63 @@
             });
         }
 
-        // --- Server Event Listeners (Teacher Overrides) ---
+        function sendScore() {
+            socket.emit('team_score_update', { team: 'Team A', points: 10 });
+        }
+
+        // ==========================================
+        // 🤖 ÜBUNG 3: MARKTSCHREIER (CHAT)
+        // ==========================================
+        async function sendChat() {
+            const input = document.getElementById('msg').value;
+            if (!input) return;
+            
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            btn.innerText = "Verkäufer denkt nach...";
+            
+            document.getElementById('chat').innerHTML += `<p><strong>Du:</strong> ${input}</p>`;
+            document.getElementById('msg').value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        history: chatHistory, 
+                        basket: basketItems,
+                        inventory: currentInventory
+                    })
+                });
+                
+                if (!res.ok) throw new Error("Rate limit");
+                
+                const data = await res.json();
+                document.getElementById('chat').innerHTML += `<p><strong>Verkäufer:</strong> ${data.vendor_reply}</p>`;
+                document.getElementById('feedback').innerText = data.didactic_feedback;
+            } catch (e) {
+                document.getElementById('feedback').innerText = "Der Markt ist gerade sehr voll! Bitte in ein paar Sekunden nochmal probieren.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Sagen";
+            }
+        }
+
+        // ==========================================
+        // 🔄 GLOBALER SERVER STATUS (TEACHER OVERRIDES)
+        // ==========================================
         socket.on('state_update', (data) => {
-            // Apply the active exercise mandated by the server
+            // 1. Globale Navigation anwenden
             if (data.activeExercise) {
                 setExercise(data.activeExercise);
             }
+            
+            // 2. Wimmelbild Modus anwenden
             if (data.wimmelbildMode) {
-                // Manually trigger the UI update function above
-                const dummyEvent = new CustomEvent('update_wimmelbild');
-                socket._callbacks['$wimmelbild_update'][0](data.wimmelbildMode);
+                updateWimmelbildUI(data.wimmelbildMode);
             }
+            
+            // 3. Rallye Status anwenden
             if (data.state === 'lobby') {
                 clearInterval(localInterval);
                 switchView('view-lobby');
@@ -296,9 +316,9 @@
                 streak = 0;
                 document.getElementById('score-display').innerText = myTeam;
                 switchView('view-game');
-                nextQuestion();
+                if (typeof nextQuestion === "function") nextQuestion();
             } else if (data.state === 'scoreboard') {
-                showLeaderboard(data.teams);
+                if (typeof showLeaderboard === "function") showLeaderboard(data.teams);
             }
         });
 
