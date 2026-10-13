@@ -10,23 +10,22 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-const BASE_SYSTEM_PROMPT = `Du bist ein Marktverkäufer.
-STRIKTE REGELN:
-- Sprich NUR über dein INVENTAR. Sag NIEMALS "Satz", "Endung", "Grammatik" oder "Regel".
-- Der Kunde MUSS in ganzen Sätzen mit Verb bestellen.
+const BASE_SYSTEM_PROMPT = `Du bist ein freundlicher, leicht schwerhöriger Verkäufer auf einem Markt. Sprachniveau: A1/A2.
 
-ANTWORT-LOGIK (NUR ALS JSON):
-- Kein Verb oder nur "Ja/Nein":
-  {"vendor_reply": "Was möchtest du genau tun? Kaufen?", "grammar_correct": false, "item_bought": null, "checkout_complete": false}
-- Falsche Endung / Falsches Geschlecht:
-  {"vendor_reply": "Wie bitte? Ich habe [Nenne hier 1-2 passende Optionen aus dem INVENTAR]. Was genau?", "grammar_correct": false, "item_bought": null, "checkout_complete": false}
-- Nicht im INVENTAR:
-  {"vendor_reply": "Das habe ich heute leider nicht da. Schau dir mein Inventar an.", "grammar_correct": false, "item_bought": null, "checkout_complete": false}
-- Korrekter Satz + richtige Endung (Akkusativ):
-  {"vendor_reply": "Sehr gerne, hier bitte!", "grammar_correct": true, "item_bought": "[EXAKTER NAME AUS INVENTAR]", "checkout_complete": false}
-- 3 Artikel gekauft:
-  {"vendor_reply": "Danke für den Einkauf! Tschüss!", "grammar_correct": true, "item_bought": null, "checkout_complete": true}`;
-  
+GEHEIME SPIELREGELN (Niemals verraten!):
+1. Sag NIEMALS Wörter wie "Adjektiv", "Grammatik", "Endung" oder "Regel". Zitiere NIEMALS die direkte Eingabe des Kunden.
+2. Erwähne NIEMALS, dass der Kunde 3 Dinge kaufen muss.
+3. GANZE SÄTZE: Der Kunde MUSS in ganzen Sätzen sprechen. Wenn der Kunde nur das Produkt nennt (z.B. "roter Apfel" oder "grüne Tomate") ohne Verb, setze "grammar_correct": false und frage natürlich nach (z.B. "Ein roter Apfel? Was möchtest du damit machen? Kaufst du ihn oder guckst du nur?").
+4. BEWERTUNG DER GRAMMATIK: Ignoriere kleine Tippfehler bei Verben oder Pronomen (z.B. "wolle" statt "will"). Solange es ein Satz ist UND das Nomen und das Adjektiv die richtige Endung haben (meist Akkusativ), MUSST du die Eingabe als korrekt akzeptieren!
+5. WENN KORREKT (Satz + richtige Endung): Setze "grammar_correct": true und verkaufe den Artikel sofort mit einer natürlichen Reaktion.
+6. WENN FALSCH (falsches/fehlendes Adjektiv): Setze "grammar_correct": false. Tu natürlich verwirrt und biete Optionen aus dem INVENTAR an (z.B. "Hä? Welche Tomate? Ich habe rote und grüne.").
+7. Wenn der Artikel NICHT im INVENTAR ist: Sag, dass du ihn nicht hast.
+8. Wenn der Artikel schon im Korb ist: Sag, dass er ihn schon gekauft hat.
+9. Wenn 3 Dinge im Korb sind: Beende das Gespräch ("Danke für den Einkauf! Tschüss!").
+
+Antworte NUR in JSON:
+{"vendor_reply":"Deine Antwort","grammar_correct":true/false,"item_bought":"Name+Icon oder null","checkout_complete":true/false}`;
+
 app.post('/api/chat', async (req, res) => {
     try {
         // Build the dynamic status strings from the frontend data
@@ -93,9 +92,29 @@ io.on('connection', (socket) => {
         io.emit('wimmelbild_update', wimmelbildMode); // Send to all tablets
     });
 
+    // --- Teacher Action für globale Navigation ---
     socket.on('set_active_exercise', (exerciseId) => {
         activeExercise = exerciseId;
         io.emit('exercise_update', activeExercise);
+
+        // NEU: Wenn der Lehrer Übung 2 verlässt, breche die Lobby/das Spiel ab
+        if (activeExercise !== 'u2' && classroomState !== 'practice') {
+            classroomState = 'practice';
+            players = {}; 
+            teams = {};
+            teamSizes = {};
+            clearInterval(timerInterval); // Stoppt den Multiplayer-Timer, falls er läuft
+            
+            // Sende den zurückgesetzten Status an alle Schüler und das Lehrer-Dashboard
+            io.emit('state_update', { 
+                state: classroomState, 
+                timer: 60, 
+                teams, 
+                wimmelbildMode, 
+                activeExercise 
+            });
+            io.emit('teacher_update', { players, teams, state: classroomState });
+        }
     });
 
     // --- Student Actions ---

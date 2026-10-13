@@ -307,7 +307,11 @@
             }
             
             // 3. Rallye Status anwenden
-            if (data.state === 'lobby') {
+            if (data.state === 'practice') {
+                clearInterval(localInterval);
+                switchView('view-practice-start');
+                currentMode = 'practice';
+            } else if (data.state === 'lobby') {
                 clearInterval(localInterval);
                 switchView('view-lobby');
             } else if (data.state === 'multiplayer') {
