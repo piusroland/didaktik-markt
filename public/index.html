@@ -13,15 +13,61 @@
         .active-btn { background: #007bff; color: white; }
 
         /* Übung 1 Styles */
-        .market-grid { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-        .market-item { font-size: 60px; cursor: pointer; padding: 20px; background: #fff; border: 3px solid #ddd; border-radius: 15px; transition: transform 0.1s; user-select: none; }
-        .market-item:active { transform: scale(0.95); border-color: #007bff; }
-        .grammar-box { margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px; font-size: 24px; text-align: center; min-height: 90px; line-height: 1.5; }
+        .market-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
+            gap: 12px; 
+            margin-top: 15px; 
+            max-height: 40vh; /* Restricts the height so it fits on tablet screens */
+            overflow-y: auto; /* Enables vertical scrolling */
+            padding: 15px; 
+            background: #f8f9fa; /* Slight background to separate the scroll area */
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .market-item { 
+            font-size: 35px; /* Smaller icons */
+            cursor: pointer; 
+            padding: 10px; 
+            background: #fff; 
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            transition: transform 0.1s; 
+            user-select: none; 
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .market-item:active { 
+            transform: scale(0.95); 
+            border-color: #007bff; 
+        }
+        
+        .grammar-box { 
+            margin-top: 20px; 
+            padding: 20px; 
+            background: #e9ecef; 
+            border-radius: 8px; 
+            font-size: 24px; 
+            text-align: center; 
+            min-height: 90px; 
+            line-height: 1.5;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.05); /* Adds a subtle shadow above the box */
+        }
         
         /* The Didactic Signal: Red bold text for the morphological ending */
         .signal { color: #d9534f; font-weight: bold; text-decoration: underline; }
         
-        .mode-switch { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
+        .mode-switch { 
+            text-align: center; 
+            margin-bottom: 10px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            background: #e9ecef; 
+            padding: 15px; 
+            border-radius: 8px; 
+        }
         .mode-switch label { cursor: pointer; padding: 10px; }
 
         /* Übung 2 Styles */
@@ -52,6 +98,24 @@
             <div class="market-item" onclick="showGrammar('gurke')">🥒</div>
             <div class="market-item" onclick="showGrammar('brot')">🍞</div>
             <div class="market-item" onclick="showGrammar('kaese')">🧀</div>
+            <div class="market-item" onclick="showGrammar('tomate')">🍅</div>
+            <div class="market-item" onclick="showGrammar('aubergine')">🍆</div>
+            <div class="market-item" onclick="showGrammar('weintraube')">🍇</div>
+            <div class="market-item" onclick="showGrammar('pommes')">🍟</div>
+            <div class="market-item" onclick="showGrammar('wassermelone')">🍉</div>
+            <div class="market-item" onclick="showGrammar('mandarine')">🍊</div>
+            <div class="market-item" onclick="showGrammar('zitrone')">🍋</div>
+            <div class="market-item" onclick="showGrammar('pfirsich')">🍑</div>
+            <div class="market-item" onclick="showGrammar('banane')">🍌</div>
+            <div class="market-item" onclick="showGrammar('ei')">🥚</div>
+            <div class="market-item" onclick="showGrammar('ananas')">🍍</div>
+            <div class="market-item" onclick="showGrammar('reis')">🍚</div>
+            <div class="market-item" onclick="showGrammar('birne')">🍐</div>
+            <div class="market-item" onclick="showGrammar('kirsche')">🍒</div>
+            <div class="market-item" onclick="showGrammar('erdbeere')">🍓</div>
+            <div class="market-item" onclick="showGrammar('eis')">🍦</div>
+            <div class="market-item" onclick="showGrammar('lolli')">🍭</div>
+            <div class="market-item" onclick="showGrammar('pizza')">🍕</div>
         </div>
 
         <div id="grammar-display" class="grammar-box">
@@ -195,6 +259,74 @@
             kaese: { // Maskulinum
                 nom: "d<span class='signal'>er</span> alt<span class='signal'>e</span> Käse <br> ein alt<span class='signal'>er</span> Käse",
                 acc: "Ich probiere d<span class='signal'>en</span> alt<span class='signal'>en</span> Käse <br> Ich probiere ein<span class='signal'>en</span> alt<span class='signal'>en</span> Käse"
+            },
+            tomate: { // Femininum
+                nom: "di<span class='signal'>e</span> rot<span class='signal'>e</span> Tomate <br> ein<span class='signal'>e</span> rot<span class='signal'>e</span> Tomate",
+                acc: "Ich schneide di<span class='signal'>e</span> rot<span class='signal'>e</span> Tomate <br> Ich schneide ein<span class='signal'>e</span> rot<span class='signal'>e</span> Tomate"
+            },
+            aubergine: { // Femininum
+                nom: "di<span class='signal'>e</span> schwarz<span class='signal'>e</span> Aubergine <br> ein<span class='signal'>e</span> schwarz<span class='signal'>e</span> Aubergine",
+                acc: "Ich suche di<span class='signal'>e</span> schwarz<span class='signal'>e</span> Aubergine <br> Ich suche ein<span class='signal'>e</span> schwarz<span class='signal'>e</span> Aubergine"
+            },
+            weintraube: { // Femininum
+                nom: "di<span class='signal'>e</span> süß<span class='signal'>e</span> Weintraube <br> ein<span class='signal'>e</span> süß<span class='signal'>e</span> Weintraube",
+                acc: "Ich esse di<span class='signal'>e</span> süß<span class='signal'>e</span> Weintraube <br> Ich esse ein<span class='signal'>e</span> süß<span class='signal'>e</span> Weintraube"
+            },
+            wassermelone: { // Femininum
+                nom: "di<span class='signal'>e</span> groß<span class='signal'>e</span> Wassermelone <br> ein<span class='signal'>e</span> groß<span class='signal'>e</span> Wassermelone",
+                acc: "Ich nehme di<span class='signal'>e</span> groß<span class='signal'>e</span> Wassermelone <br> Ich nehme ein<span class='signal'>e</span> groß<span class='signal'>e</span> Wassermelone"
+            },
+            mandarine: { // Femininum
+                nom: "di<span class='signal'>e</span> klein<span class='signal'>e</span> Mandarine <br> ein<span class='signal'>e</span> klein<span class='signal'>e</span> Mandarine",
+                acc: "Ich schäle di<span class='signal'>e</span> klein<span class='signal'>e</span> Mandarine <br> Ich schäle ein<span class='signal'>e</span> klein<span class='signal'>e</span> Mandarine"
+            },
+            zitrone: { // Femininum
+                nom: "di<span class='signal'>e</span> saur<span class='signal'>e</span> Zitrone <br> ein<span class='signal'>e</span> saur<span class='signal'>e</span> Zitrone",
+                acc: "Ich brauche di<span class='signal'>e</span> saur<span class='signal'>e</span> Zitrone <br> Ich brauche ein<span class='signal'>e</span> saur<span class='signal'>e</span> Zitrone"
+            },
+            pfirsich: { // Maskulinum
+                nom: "d<span class='signal'>er</span> weich<span class='signal'>e</span> Pfirsich <br> ein weich<span class='signal'>er</span> Pfirsich",
+                acc: "Ich nehme d<span class='signal'>en</span> weich<span class='signal'>en</span> Pfirsich <br> Ich nehme ein<span class='signal'>en</span> weich<span class='signal'>en</span> Pfirsich"
+            },
+            banane: { // Femininum
+                nom: "di<span class='signal'>e</span> gelb<span class='signal'>e</span> Banane <br> ein<span class='signal'>e</span> gelb<span class='signal'>e</span> Banane",
+                acc: "Ich esse di<span class='signal'>e</span> gelb<span class='signal'>e</span> Banane <br> Ich esse ein<span class='signal'>e</span> gelb<span class='signal'>e</span> Banane"
+            },
+            ei: { // Neutrum
+                nom: "da<span class='signal'>s</span> gekocht<span class='signal'>e</span> Ei <br> ein gekocht<span class='signal'>es</span> Ei",
+                acc: "Ich esse da<span class='signal'>s</span> gekocht<span class='signal'>e</span> Ei <br> Ich esse ein gekocht<span class='signal'>es</span> Ei"
+            },
+            ananas: { // Femininum
+                nom: "di<span class='signal'>e</span> reif<span class='signal'>e</span> Ananas <br> ein<span class='signal'>e</span> reif<span class='signal'>e</span> Ananas",
+                acc: "Ich kaufe di<span class='signal'>e</span> reif<span class='signal'>e</span> Ananas <br> Ich kaufe ein<span class='signal'>e</span> reif<span class='signal'>e</span> Ananas"
+            },
+            reis: { // Maskulinum
+                nom: "d<span class='signal'>er</span> weiß<span class='signal'>e</span> Reis <br> ein weiß<span class='signal'>er</span> Reis",
+                acc: "Ich koche d<span class='signal'>en</span> weiß<span class='signal'>en</span> Reis <br> Ich koche ein<span class='signal'>en</span> weiß<span class='signal'>en</span> Reis"
+            },
+            birne: { // Femininum
+                nom: "di<span class='signal'>e</span> saftig<span class='signal'>e</span> Birne <br> ein<span class='signal'>e</span> saftig<span class='signal'>e</span> Birne",
+                acc: "Ich sehe di<span class='signal'>e</span> saftig<span class='signal'>e</span> Birne <br> Ich sehe ein<span class='signal'>e</span> saftig<span class='signal'>e</span> Birne"
+            },
+            kirsche: { // Femininum
+                nom: "di<span class='signal'>e</span> dunkl<span class='signal'>e</span> Kirsche <br> ein<span class='signal'>e</span> dunkl<span class='signal'>e</span> Kirsche",
+                acc: "Ich suche di<span class='signal'>e</span> dunkl<span class='signal'>e</span> Kirsche <br> Ich suche ein<span class='signal'>e</span> dunkl<span class='signal'>e</span> Kirsche"
+            },
+            erdbeere: { // Femininum
+                nom: "di<span class='signal'>e</span> süß<span class='signal'>e</span> Erdbeere <br> ein<span class='signal'>e</span> süß<span class='signal'>e</span> Erdbeere",
+                acc: "Ich mag di<span class='signal'>e</span> süß<span class='signal'>e</span> Erdbeere <br> Ich mag ein<span class='signal'>e</span> süß<span class='signal'>e</span> Erdbeere"
+            },
+            eis: { // Neutrum
+                nom: "da<span class='signal'>s</span> ander<span class='signal'>e</span> Eis <br> ein ander<span class='signal'>es</span> Eis",
+                acc: "Ich möchte da<span class='signal'>s</span> ander<span class='signal'>e</span> Eis <br> Ich möchte ein ander<span class='signal'>es</span> Eis"
+            },
+            lolli: { // Maskulinum
+                nom: "d<span class='signal'>er</span> bunt<span class='signal'>e</span> Lolli <br> ein bunt<span class='signal'>er</span> Lolli",
+                acc: "Ich schenke d<span class='signal'>en</span> bunt<span class='signal'>en</span> Lolli <br> Ich schenke ein<span class='signal'>en</span> bunt<span class='signal'>en</span> Lolli"
+            },
+            pizza: { // Femininum
+                nom: "di<span class='signal'>e</span> lecker<span class='signal'>e</span> Pizza <br> ein<span class='signal'>e</span> lecker<span class='signal'>e</span> Pizza",
+                acc: "Ich bestelle di<span class='signal'>e</span> lecker<span class='signal'>e</span> Pizza <br> Ich bestelle ein<span class='signal'>e</span> lecker<span class='signal'>e</span> Pizza"
             }
         };
 
@@ -238,10 +370,28 @@
         let currentQuestion = {};
 
         const questions = [
-            { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin = -en" },
+            { text: "Ich kaufe einen frisch<span class='blank'>___</span> Käse.", answer: "-en", rule: "Akkusativ + Maskulin (einen) = -en" },
             { text: "Das ist ein alt<span class='blank'>___</span> Käse.", answer: "-er", rule: "Nominativ + Maskulin (ein) = -er" },
             { text: "Ich nehme die grün<span class='blank'>___</span> Gurke.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
-            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" }
+            { text: "Wo ist das frisch<span class='blank'>___</span> Brot?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" },
+            { text: "Ich schneide die rot<span class='blank'>___</span> Tomate.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
+            { text: "Wo ist die schwarz<span class='blank'>___</span> Aubergine?", answer: "-e", rule: "Nominativ + Feminin (die) = -e" },
+            { text: "Ich nehme den grün<span class='blank'>___</span> Apfel.", answer: "-en", rule: "Akkusativ + Maskulin (der) = -en" },
+            { text: "Ich esse die süß<span class='blank'>___</span> Weintraube.", answer: "-e", rule: "Nominativ + Feminin (die) = -e" },
+            { text: "Das ist eine groß<span class='blank'>___</span> Wassermelone.", answer: "-e", rule: "Nominativ + Feminin (eine) = -e" },
+            { text: "Ich schäle eine klein<span class='blank'>___</span> Mandarine.", answer: "-e", rule: "Akkusativ + Feminin (eine) = -e" },
+            { text: "Ich brauche eine saur<span class='blank'>___</span> Zitrone.", answer: "-e", rule: "Akkusativ + Feminin (eine) = -e" },
+            { text: "Das ist ein weich<span class='blank'>___</span> Pfirsch.", answer: "-er", rule: "Nominativ + Maskulin (ein) = -er" },
+            { text: "Das ist eine gelb<span class='blank'>___</span> Banane.", answer: "-e", rule: "Nominativ + Feminin (eine) = -e" },
+            { text: "Wo steht das gekocht<span class='blank'>___</span> Ei?", answer: "-e", rule: "Nominativ + Neutrum (das) = -e" },
+            { text: "Ich kaufe eine reif<span class='blank'>___</span> Ananas.", answer: "-e", rule: "Akkusativ + Feminin (eine) = -e" },
+            { text: "Ich koche den weiß<span class='blank'>___</span> Reis.", answer: "-en", rule: "Akkusativ + Maskulin (der) = -en" },
+            { text: "Wo liegt die saftig<span class='blank'>___</span> Birne?", answer: "-e", rule: "Nominativ + Feminin (die) = -e" },
+            { text: "Ich suche eine dunkl<span class='blank'>___</span> Kirsche.", answer: "-e", rule: "Akkusativ + Feminin (eine) = -e" },
+            { text: "Ich mag die süß<span class='blank'>___</span> Erdbeere.", answer: "-e", rule: "Akkusativ + Feminin (die) = -e" },
+            { text: "Ich möchte ein ander<span class='blank'>___</span> Eis.", answer: "-es", rule: "Akkusativ + Neutrum (ein) = -es" },
+            { text: "Ich schenke ihm einen bunt<span class='blank'>___</span> Loli.", answer: "-en", rule: "Akkusativ + Maskulin (einen) = -en" },
+            { text: "Ich bestelle eine lecker<span class='blank'>___</span> Pizza.", answer: "-e", rule: "Akkusativ + Feminin (eine) = -e" }
         ];
 
         function switchView(viewId) {
